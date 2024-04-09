@@ -178,17 +178,16 @@ class AirportDataset(TensorDataset):
 
 
         self.train_x_nodes, self.train_x_edges, self.train_x_edges_attr, self.train_y = train_x_nodes, train_x_edges, train_x_edges_attr, train_y
-        self.test_x_nodes, self.test_x_edges, self.test_x_edges_attr, self.test_y = test_x_nodes, test_x_edges, test_x_edges_attr, test_y
+        for i in range(len(self.train_y)):
+            self.train_y[i] = np.log(self.train_y[i]+1)
 
+        self.test_x_nodes, self.test_x_edges, self.test_x_edges_attr, self.test_y = test_x_nodes, test_x_edges, test_x_edges_attr, test_y
 
     def get_ca_airport_index(self):
         return self.qualified_ca_airports_inverse
     
     def get_all_airport_index(self):
         return self.qualified_airports_inverse
-
-        # super().__init__(train_x_nodes, train_x_edges, train_x_edges_attr, train_y,
-        #                  test_x_nodes, test_x_edges, test_x_edges_attr, test_y)
 
 
 class AirportGraph():

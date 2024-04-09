@@ -14,6 +14,7 @@ class DeepAir(nn.Module):
         
         self.gru = nn.GRU(8*3, 16, batch_first=True)
         self.fc = nn.Linear(16, num_airports * prediction_horizon)
+        nn.init.xavier_normal_(self.fc.weight)
 
     def forward(self, batched_data_series):
         batched_gru_inputs = []
