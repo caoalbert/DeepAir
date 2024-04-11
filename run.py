@@ -8,6 +8,7 @@ import torch.nn as nn
 import torch
 import pickle
 import numpy as np
+import os
 
 MODEL_PATH = 'trained_models/albert0408.pth'
 PARAMS_PATH = f'trained_models/albert0408.pth'
@@ -30,7 +31,7 @@ if __name__ == '__main__':
                     prediction_horizon=dataset.prediction_horizon)
     model_params = (len(dataset.qualified_ca_airports), dataset.prediction_horizon)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.04)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     loss = nn.MSELoss()
     num_epochs = 200
 
@@ -48,10 +49,28 @@ if __name__ == '__main__':
                               y=dataset.test_y)
     test_graph.process()
     test_y_predicted = model(test_graph.series)
-
     test_y_predicted = test_y_predicted.detach().numpy().reshape(-1, dataset.prediction_horizon)
-    test_y_predicted = np.exp(test_y_predicted)
-    test_y_predicted = test_y_predicted - 1
+    # test_y_predicted = np.exp(test_y_predicted)
+    # test_y_predicted = test_y_predicted - 1
+
+
+    train_y_predicted = model(graph.series)
+    train_y_predicted = train_y_predicted.detach().numpy().reshape(-1, dataset.prediction_horizon)
+    # train_y_predicted = np.exp(train_y_predicted)
+    # train_y_predicted = train_y_predicted - 1
+
+    if os.path.exists('train_y_predicted.npy'):
+        os.remove('train_y_predicted.npy')
+    if os.path.exists('train_y.npy'):
+        os.remove('train_y.npy')
+    if os.path.exists('test_y_predicted.npy'):
+        os.remove('test_y_predicted.npy')
+    if os.path.exists('test_y.npy'):
+        os.remove('test_y.npy')
+
+    np.save('train_y_predicted.npy', train_y_predicted)
+    np.save('train_y.npy', dataset.train_y)
+
     np.save('test_y_predicted.npy', test_y_predicted)
     np.save('test_y.npy', dataset.test_y)
 
