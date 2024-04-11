@@ -12,18 +12,11 @@ test_y_joey = np.load('../test_y_joey.npy')
 print(test_y_predicted_joey)
 print(test_y_joey)
 
-
-# # Normalize these two arrays
-# test_y_predicted_joey = (test_y_predicted_joey - test_y_predicted_joey.min()) / (test_y_predicted_joey.max() - test_y_predicted_joey.min())
-# test_y_joey = (test_y_joey - test_y_joey.min()) / (test_y_joey.max() - test_y_joey.min())
-
-
 # Make test_y_predicted the same shape as test_y
 test_y_predicted_joey = test_y_predicted_joey.reshape(test_y_joey.shape)
 
 
-# Plot the predicted and actual values in 5 subplots
-#
+# Plot the predicted and actual values in subplots
 fig, axs = plt.subplots(5, 1, figsize=(12, 17))
 quarter = np.arange(1, 5, 1)
 # fig.tight_layout()

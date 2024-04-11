@@ -193,13 +193,13 @@ class AirportDataset(TensorDataset):
         self.train_x_nodes, self.train_x_edges, self.train_x_edges_attr, self.train_y = train_x_nodes, train_x_edges, train_x_edges_attr, train_y
 
         # Normalize the features
-        self.train_x_nodes, self.train_x_edges_attr = self.normalize_features(self.train_x_nodes, self.train_x_edges_attr)
+        self.train_x_nodes, self.train_x_edges_attr, self.train_y = self.normalize_features(self.train_x_nodes, self.train_x_edges_attr, self.train_y)
 
-        for i in range(len(self.train_y)):
-            self.train_y[i] = np.log(self.train_y[i] + 1)
+        # for i in range(len(self.train_y)):
+        #     self.train_y[i] = np.log(self.train_y[i] + 1)
 
         self.test_x_nodes, self.test_x_edges, self.test_x_edges_attr, self.test_y = test_x_nodes, test_x_edges, test_x_edges_attr, test_y
-        self.test_x_nodes, self.test_x_edges_attr = self.normalize_features(self.test_x_nodes, self.test_x_edges_attr)
+        self.test_x_nodes, self.test_x_edges_attr, self.test_y = self.normalize_features(self.test_x_nodes, self.test_x_edges_attr, self.test_y)
 
     def get_ca_airport_index(self):
         return self.qualified_ca_airports_inverse
@@ -207,16 +207,18 @@ class AirportDataset(TensorDataset):
     def get_all_airport_index(self):
         return self.qualified_airports_inverse
 
-    def normalize_features(self, x_nodes, x_edge_attr):
+    def normalize_features(self, x_nodes, x_edge_attr, y):
         # Convert lists to numpy arrays if they are not already
-        x_nodes = np.array(x_nodes, dtype=np.float32)  # Ensure dtype is float for scaler
+        x_nodes = np.array(x_nodes, dtype=np.float32)
         x_edge_attr = np.array(x_edge_attr, dtype=np.float32)
+        y = np.array(y, dtype=np.float32)
 
         # Reshape for scaler, fit_transform, and then reshape back
         x_nodes = self.scaler_node_features.fit_transform(x_nodes.reshape(-1, 1)).reshape(x_nodes.shape)
         x_edge_attr = self.scaler_edge_features.fit_transform(x_edge_attr.reshape(-1, 1)).reshape(x_edge_attr.shape)
+        y = self.scaler_node_features.fit_transform(y.reshape(-1, 1)).reshape(y.shape)
 
-        return x_nodes, x_edge_attr
+        return x_nodes, x_edge_attr, y
 
 class AirportGraph():
     def __init__(self, nodes, edges, edge_attr, y):

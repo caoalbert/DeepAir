@@ -35,6 +35,9 @@ if __name__ == '__main__':
                                  edge_attr=dataset.test_x_edges_attr,
                                  y=dataset.test_y)
 
+    # Print training and testing graph
+    print(training_graph)
+
     training_graph.process()
     testing_graph.process()
 
@@ -42,9 +45,15 @@ if __name__ == '__main__':
                     prediction_horizon=dataset.prediction_horizon)
     model_params = (len(dataset.qualified_ca_airports), dataset.prediction_horizon)
 
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+
+    # # Set weight decay
+    # for param in model.parameters():
+    #     param.register_hook(lambda grad: torch.clamp(grad, -0.1, 0.1))
+
     loss = nn.MSELoss()
-    num_epochs = 200
+
+    num_epochs = 70
 
     train_losses, test_losses = train_model_plot(model, optimizer, loss, num_epochs, training_graph, testing_graph)
 
@@ -60,7 +69,7 @@ if __name__ == '__main__':
     model.eval()
     with torch.no_grad():
         test_y_predicted = model(testing_graph.series).detach().numpy()
-        test_y_predicted = np.exp(test_y_predicted) - 1  # Reversing log transformation
+        # test_y_predicted = np.exp(test_y_predicted) - 1  # Reversing log transformation
 
     np.save('test_y_predicted_joey.npy', test_y_predicted)
     np.save('test_y_joey.npy', dataset.test_y)
