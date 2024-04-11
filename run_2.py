@@ -2,9 +2,10 @@ import sys
 
 sys.path.insert(0, 'code')
 
-from dataset import AirportDataset, AirportGraph
+from dataset_normalized import AirportDataset, AirportGraph
 from model import DeepAir
 from train import train_model, train_model_plot
+from visualization import loss_plot
 import torch.nn as nn
 import torch
 import pickle
@@ -41,7 +42,7 @@ if __name__ == '__main__':
                     prediction_horizon=dataset.prediction_horizon)
     model_params = (len(dataset.qualified_ca_airports), dataset.prediction_horizon)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
     loss = nn.MSELoss()
     num_epochs = 200
 
@@ -53,16 +54,7 @@ if __name__ == '__main__':
         pickle.dump((len(dataset.qualified_ca_airports), dataset.prediction_horizon), f)
 
     # Plotting training and validation losses
-    plt.figure(figsize=(10, 6))
-    plt.plot(train_losses, label='Training Loss')
-    plt.plot(test_losses, label='Validation Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Training and Validation Loss')
-    plt.legend()
-    plt.show()
-
-    model.eval()
+    loss_plot(train_losses, test_losses)
 
     # Model evaluation as before
     model.eval()
