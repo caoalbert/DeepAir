@@ -20,7 +20,7 @@ class DeepAir(nn.Module):
 
         self.fc = nn.Linear(gru_out, num_airports * prediction_horizon)
     
-        self.dropout = nn.Dropout(0.1)
+        self.dropout = nn.Dropout(0.25)
         
 
         nn.init.xavier_normal_(self.fc.weight)

@@ -12,13 +12,14 @@ import os
 
 MODEL_PATH = 'trained_models/albert0408.pth'
 PARAMS_PATH = f'trained_models/albert0408.pth'
-
+# self.training_x_start_quarter + batch_length*2 + n_train_samples
 if __name__ == '__main__':
-    dataset = AirportDataset(training_start_quarter=[1,2003], 
-                             batch_length=8, 
-                             n_train_samples=36, 
+    n_train_samples = 30
+    dataset = AirportDataset(training_start_quarter=[1,2002], 
+                             batch_length=10, 
+                             n_train_samples=n_train_samples, 
                              n_test_samples=1, 
-                             prediction_horizon=4)
+                             prediction_horizon=12)
 
     graph = AirportGraph(nodes=dataset.train_x_nodes,
                          edges=dataset.train_x_edges,
@@ -34,7 +35,7 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     loss = nn.MSELoss()
-    num_epochs = 200
+    num_epochs = 30
 
     train_model(model, optimizer, loss, num_epochs, graph)
 
@@ -51,11 +52,12 @@ if __name__ == '__main__':
     test_graph.process()
     test_y_predicted = model(test_graph.series)
     test_y_predicted = test_y_predicted.detach().numpy().reshape(-1, dataset.prediction_horizon)
-    test_y_predicted = y_scaler.inverse_transform(test_y_predicted)
+    test_y_predicted = y_scaler.inverse_transform(test_y_predicted.T).T
 
     train_y_predicted = model(graph.series)
-    train_y_predicted = train_y_predicted.detach().numpy().reshape(-1, dataset.prediction_horizon)
-    train_y_predicted = y_scaler.inverse_transform(train_y_predicted)
+    train_y_predicted = train_y_predicted.detach().numpy().reshape(n_train_samples, 7, dataset.prediction_horizon)
+    for i in range(len(train_y_predicted)):
+        train_y_predicted[i] = y_scaler.inverse_transform(train_y_predicted[i].T).T
 
     if os.path.exists('train_y_predicted.npy'):
         os.remove('train_y_predicted.npy')
@@ -69,11 +71,11 @@ if __name__ == '__main__':
 
     train_y = dataset.train_y
     for i in range(len(train_y)):
-        train_y[i] = y_scaler.inverse_transform(train_y[i].reshape(-1, dataset.prediction_horizon))
+        train_y[i] = y_scaler.inverse_transform(train_y[i].reshape(-1, dataset.prediction_horizon).T).T
 
     test_y = dataset.test_y
     for i in range(len(test_y)):
-        test_y[i] = y_scaler.inverse_transform(test_y[i].reshape(-1, dataset.prediction_horizon))
+        test_y[i] = y_scaler.inverse_transform(test_y[i].reshape(-1, dataset.prediction_horizon).T).T
 
     np.save('train_y_predicted.npy', train_y_predicted)
     np.save('train_y.npy', np.array(train_y))

@@ -133,11 +133,11 @@ class AirportDataset(TensorDataset):
             if i == 0:
                 x_nodes = node_att_scaler.fit_transform(x_nodes.squeeze()).reshape(x_nodes.shape)
                 x_edges_attr = edge_att_scaler.fit_transform(x_edges_attr.squeeze()).reshape(x_edges_attr.shape)
-                y = y_scaler.fit_transform(y)
+                y = y_scaler.fit_transform(y.T).T
             else:
                 x_nodes = node_att_scaler.transform(x_nodes.squeeze()).reshape(x_nodes.shape)
                 x_edges_attr = edge_att_scaler.transform(x_edges_attr.squeeze()).reshape(x_edges_attr.shape)
-                y = y_scaler.transform(y)
+                y = y_scaler.transform(y.T).T
 
             set_x_nodes.append(x_nodes)
             set_x_edges.append(x_edges)
@@ -167,7 +167,7 @@ class AirportDataset(TensorDataset):
 
             x_nodes = node_att_scaler.transform(x_nodes.squeeze()).reshape(x_nodes.shape)
             x_edges_attr = edge_att_scaler.transform(x_edges_attr.squeeze()).reshape(x_edges_attr.shape)
-            y = y_scaler.transform(y)
+            y = y_scaler.transform(y.T).T
 
             set_x_nodes.append(x_nodes)
             set_x_edges.append(x_edges)
