@@ -4,7 +4,7 @@ import data_preprocess
 import numpy as np
 from tqdm import tqdm
 import dgl
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 class AirportDataset(TensorDataset):
     def _convert_to_quarter_index(self, list_for_time):
@@ -111,8 +111,9 @@ class AirportDataset(TensorDataset):
         return x_nodes, x_edges_all, x_edge_attr_all, y
 
     def _build_train_set(self, batch_length, n_samples, x_start, y_start, prediction_horizon):
-        node_att_scaler = StandardScaler()
-        edge_att_scaler = StandardScaler()
+        node_att_scaler = MinMaxScaler()
+        edge_att_scaler = MinMaxScaler()
+        y_scaler = MinMaxScaler()
 
         set_x_nodes, set_x_edges, set_x_edges_attr, set_y = [], [], [], []
         for i in tqdm(range(n_samples)):
@@ -130,20 +131,22 @@ class AirportDataset(TensorDataset):
                           self.qualified_ca_airports,
                           self.qualified_ca_airports_inverse)
             if i == 0:
-                x_nodes = node_att_scaler.fit_transform(x_nodes.reshape(-1, 1)).reshape(x_nodes.shape)
-                x_edges_attr = edge_att_scaler.fit_transform(x_edges_attr.reshape(-1,1)).reshape(x_edges_attr.shape)
+                x_nodes = node_att_scaler.fit_transform(x_nodes.squeeze()).reshape(x_nodes.shape)
+                x_edges_attr = edge_att_scaler.fit_transform(x_edges_attr.squeeze()).reshape(x_edges_attr.shape)
+                y = y_scaler.fit_transform(y)
             else:
-                x_nodes = node_att_scaler.transform(x_nodes.reshape(-1,1)).reshape(x_nodes.shape)
-                x_edges_attr = edge_att_scaler.transform(x_edges_attr.reshape(-1,1)).reshape(x_edges_attr.shape)
+                x_nodes = node_att_scaler.transform(x_nodes.squeeze()).reshape(x_nodes.shape)
+                x_edges_attr = edge_att_scaler.transform(x_edges_attr.squeeze()).reshape(x_edges_attr.shape)
+                y = y_scaler.transform(y)
 
             set_x_nodes.append(x_nodes)
             set_x_edges.append(x_edges)
             set_x_edges_attr.append(x_edges_attr)
             set_y.append(y)
 
-        return set_x_nodes, set_x_edges, set_x_edges_attr, set_y, node_att_scaler, edge_att_scaler
+        return set_x_nodes, set_x_edges, set_x_edges_attr, set_y, node_att_scaler, edge_att_scaler, y_scaler
 
-    def _build_test_set(self, batch_length, n_samples, x_start, y_start, prediction_horizon, node_att_scaler, edge_att_scaler):
+    def _build_test_set(self, batch_length, n_samples, x_start, y_start, prediction_horizon, node_att_scaler, edge_att_scaler, y_scaler):
 
         set_x_nodes, set_x_edges, set_x_edges_attr, set_y = [], [], [], []
         for i in tqdm(range(n_samples)):
@@ -162,8 +165,9 @@ class AirportDataset(TensorDataset):
                           self.qualified_ca_airports_inverse)
    
 
-            x_nodes = node_att_scaler.transform(x_nodes.reshape(-1,1)).reshape(x_nodes.shape)
-            x_edges_attr = edge_att_scaler.transform(x_edges_attr.reshape(-1,1)).reshape(x_edges_attr.shape)
+            x_nodes = node_att_scaler.transform(x_nodes.squeeze()).reshape(x_nodes.shape)
+            x_edges_attr = edge_att_scaler.transform(x_edges_attr.squeeze()).reshape(x_edges_attr.shape)
+            y = y_scaler.transform(y)
 
             set_x_nodes.append(x_nodes)
             set_x_edges.append(x_edges)
@@ -195,12 +199,12 @@ class AirportDataset(TensorDataset):
         self.training_x_start_quarter = self._convert_to_quarter_index(training_start_quarter)
         self.training_x_end_quarter = self.training_x_start_quarter + batch_length + n_train_samples
         self.training_y_start_quarter = self.training_x_start_quarter + batch_length
-        self.training_y_end_quarter = self.training_y_start_quarter + prediction_horizon + n_train_samples
+        self.training_y_end_quarter = self.training_x_start_quarter + batch_length + n_train_samples + prediction_horizon
         
         self.testing_x_start_quarter = self.training_x_end_quarter 
         self.testing_x_end_quarter = self.testing_x_start_quarter + batch_length + n_test_samples
         self.testing_y_start_quarter = self.testing_x_start_quarter + batch_length 
-        self.testing_y_end_quarter = self.testing_y_start_quarter + prediction_horizon + n_test_samples
+        self.testing_y_end_quarter = self.testing_x_start_quarter + batch_length  + n_test_samples + prediction_horizon
 
         
         # Find qualified airports
@@ -208,19 +212,18 @@ class AirportDataset(TensorDataset):
 
         # Build training set
         print('Building training set')
-        train_x_nodes, train_x_edges, train_x_edges_attr, train_y, x_nodes_scaler, x_edges_attr_scaler= \
+        train_x_nodes, train_x_edges, train_x_edges_attr, train_y, x_nodes_scaler, x_edges_attr_scaler, y_scaler= \
             self._build_train_set(batch_length, n_train_samples, self.training_x_start_quarter, self.training_y_start_quarter, prediction_horizon)
 
         # Build the testing set
         print('Building testing set')
         test_x_nodes, test_x_edges, test_x_edges_attr, test_y = \
-            self._build_test_set(batch_length, n_test_samples, self.testing_x_start_quarter, self.testing_y_start_quarter, prediction_horizon, x_nodes_scaler, x_edges_attr_scaler)
+            self._build_test_set(batch_length, n_test_samples, self.testing_x_start_quarter, self.testing_y_start_quarter, prediction_horizon, x_nodes_scaler, x_edges_attr_scaler, y_scaler)
 
+        self.y_scaler = y_scaler
 
         self.train_x_nodes, self.train_x_edges, self.train_x_edges_attr, self.train_y = train_x_nodes, train_x_edges, train_x_edges_attr, train_y
-        # for i in range(len(self.train_y)):
-        #     self.train_y[i] = np.log(self.train_y[i]+1)
-
+ 
         self.test_x_nodes, self.test_x_edges, self.test_x_edges_attr, self.test_y = test_x_nodes, test_x_edges, test_x_edges_attr, test_y
 
     def get_ca_airport_index(self):
